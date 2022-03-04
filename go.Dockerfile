@@ -12,4 +12,6 @@ FROM alpine:edge
 
 COPY --from=build /tmp/http-server /sbin/http-server
 
+EXPOSE 4355
+
 CMD /sbin/http-server
