@@ -2,7 +2,7 @@
 apiVersion: v1
 data:
   sidecar.container: |
-    image: nikenano/pluginserver:202203041340
+    image: nikenano/pluginserver:202203041423
     name: test-executor-plugin
     ports:
     - containerPort: 4355

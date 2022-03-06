@@ -7,4 +7,13 @@ spec:
   templates:
     - name: main
       plugin:
-        test: { }
+        test: |
+          {
+            "test":"values"
+            "more":"some sweet input"
+          }
+    - name: whalesay            # Defining the "whalesay" template
+      container:
+        image: docker/whalesay
+        command: [sleep]
+        args: ["2000"]
