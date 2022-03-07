@@ -3,11 +3,15 @@ kind: Workflow
 metadata:
   generateName: goofy-
 spec:
+  ttlStrategy:
+    secondsAfterCompletion: 500 # Time to live after workflow is completed, replaces ttlSecondsAfterFinished
+    secondsAfterSuccess: 500     # Time to live after workflow is successful
+    secondsAfterFailure: 500     # Time to live after workflow fails
   entrypoint: main
   templates:
     - name: main
       plugin:
-        test: |
+        hello: |
           {
             "test":"values"
             "more":"some sweet input"
