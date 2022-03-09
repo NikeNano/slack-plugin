@@ -4,7 +4,7 @@ metadata:
   generateName: goofy-
 spec:
   ttlStrategy:
-    secondsAfterCompletion: 500 # Time to live after workflow is completed, replaces ttlSecondsAfterFinished
+    secondsAfterCompletion: 500  # Time to live after workflow is completed, replaces ttlSecondsAfterFinished
     secondsAfterSuccess: 500     # Time to live after workflow is successful
     secondsAfterFailure: 500     # Time to live after workflow fails
   entrypoint: main
@@ -13,11 +13,6 @@ spec:
       plugin:
         hello: |
           {
-            "test":"values"
-            "more":"some sweet input"
+            "channel": "test",
+            "text": "Hello Niklas"
           }
-    - name: whalesay            # Defining the "whalesay" template
-      container:
-        image: docker/whalesay
-        command: [sleep]
-        args: ["2000"]

@@ -1,5 +1,6 @@
 import json
 import os
+import ast
 
 from slack_sdk import WebClient
 from datetime import datetime
@@ -24,11 +25,8 @@ class Plugin(BaseHTTPRequestHandler):
         if self.path == '/api/v1/template.execute':
             args = self.args()
             pprint(args)
+            small_message(args)
             if 'hello' in args['template'].get('plugin', {}):
-                small_message()
-                self.reply({'node': {'phase': 'Succeeded', 'message': 'Hello template!'}})
-            if 'test' in args['template'].get('plugin', {}):
-                small_message()
                 self.reply({'node': {'phase': 'Succeeded', 'message': 'Hello template!'}})
             else:
                 self.reply({})
@@ -36,14 +34,16 @@ class Plugin(BaseHTTPRequestHandler):
             self.unsupported()
 
 # verifies if "the-welcome-channel" already exists
-def small_message():
+def small_message(payload: dict):
     token = os.environ["SLACK_BOT_TOKEN"]
     client = WebClient(token=token)
 
-    # grab a list of all the channels in a workspace
+    vals = ast.literal_eval(payload["template"]["plugin"]["hello"])
+    if "channel" not in vals:
+        return 
     client.chat_postMessage(
-        channel="test",
-        text=f"Hello this is the bot{datetime.now()}"
+        channel=vals.get("channel", ""),
+        text=f"Hello this is the bot: {datetime.now()}, message: {vals.get('text', '')}"
     )
 
 if __name__ == '__main__':

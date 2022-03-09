@@ -6,8 +6,52 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"time"
+	"os"
+
+	"github.com/slack-go/slack"
 )
+
+func post(channel, text string) error {
+	token, ok := os.LookupEnv("SLACK_BOT_TOKEN")
+	if !ok {
+		return fmt.Errorf("env SLACK_BOT_TOKEN not set")
+	}
+
+	api := slack.New(token)
+	_, _, err := api.PostMessage(channel, slack.MsgOptionText(text, false))
+	if err != nil {
+		fmt.Printf("%s\n", err)
+		return fmt.Errorf("failed to post to slack")
+	}
+	return nil
+}
+
+func parsPayload(args map[string]interface{}) (string, string, error) {
+	if _, ok := args["template"]; !ok {
+		return "", "", fmt.Errorf("missing template information")
+	}
+	template, ok := args["template"].(map[string]interface{})
+	if !ok {
+		return "", "", fmt.Errorf("cast to bytes")
+	}
+
+	plugin, ok := template["plugin"].(map[string]interface{})
+	if !ok {
+		return "", "", fmt.Errorf("cast to bytes")
+	}
+	inputs, ok := plugin["test"]
+	if !ok {
+		return "", "", fmt.Errorf("missing inputs")
+	}
+	info, ok := inputs.(map[string]interface{})
+	if !ok {
+		return "", "", fmt.Errorf("failed to parse plugin")
+	}
+
+	fmt.Println("Success")
+	fmt.Println(info)
+	return info["channel"].(string), info["text"].(string), nil //inputs["channel"], inputs["text"], nil
+}
 
 func hello(w http.ResponseWriter, req *http.Request) {
 	body, err := ioutil.ReadAll(req.Body)
@@ -15,7 +59,24 @@ func hello(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	fmt.Println("body: ", body)
+	args := map[string]interface{}{}
+	fmt.Println("requests")
+	if err := json.Unmarshal(body, &args); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	fmt.Println("parts payload")
+	channel, text, err := parsPayload(args)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	fmt.Println("LETS POST")
+	if err := post(channel, text); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	resp := make(map[string]map[string]string)
 	resp["node"] = map[string]string{}
 	resp["node"]["phase"] = "Succeeded"
@@ -24,11 +85,11 @@ func hello(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
 	}
-	time.Sleep(time.Minute * 10)
 	w.Write(jsonResp)
 }
 
 func main() {
+	fmt.Println("START")
 	http.HandleFunc("/api/v1/template.execute", hello)
 	http.ListenAndServe(":4355", nil)
 }

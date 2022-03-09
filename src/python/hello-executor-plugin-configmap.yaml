@@ -2,7 +2,7 @@
 apiVersion: v1
 data:
   sidecar.container: |
-    image: nikenano/pluginserverpython:202203072239
+    image: nikenano/pluginserverpython:202203082129
     env:
     - name: SLACK_BOT_TOKEN
       valueFrom:
