@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"reflect"
 
 	"github.com/slack-go/slack"
 )
@@ -34,7 +35,6 @@ func parsPayload(args map[string]interface{}) (string, string, error) {
 	if !ok {
 		return "", "", fmt.Errorf("cast to bytes")
 	}
-
 	plugin, ok := template["plugin"].(map[string]interface{})
 	if !ok {
 		return "", "", fmt.Errorf("cast to bytes")
@@ -43,14 +43,15 @@ func parsPayload(args map[string]interface{}) (string, string, error) {
 	if !ok {
 		return "", "", fmt.Errorf("missing inputs")
 	}
-	info, ok := inputs.(map[string]interface{})
-	if !ok {
-		return "", "", fmt.Errorf("failed to parse plugin")
+	fmt.Println(inputs)
+	fmt.Println(reflect.TypeOf(inputs))
+	fmt.Println(inputs.(string))
+	sec := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(inputs.(string)), &sec); err != nil {
+		panic(err)
 	}
-
-	fmt.Println("Success")
-	fmt.Println(info)
-	return info["channel"].(string), info["text"].(string), nil //inputs["channel"], inputs["text"], nil
+	fmt.Println(sec)
+	return sec["channel"].(string), sec["text"].(string), nil //inputs["channel"], inputs["text"], nil
 }
 
 func hello(w http.ResponseWriter, req *http.Request) {
@@ -73,6 +74,7 @@ func hello(w http.ResponseWriter, req *http.Request) {
 	}
 	fmt.Println("LETS POST")
 	if err := post(channel, text); err != nil {
+		fmt.Println("%w", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

@@ -1,13 +1,17 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"os"
 
 	"github.com/slack-go/slack"
 )
 
-func Post(channel, text string) error {
+func post(channel, text string) error {
 	token, ok := os.LookupEnv("SLACK_BOT_TOKEN")
 	if !ok {
 		return fmt.Errorf("env SLACK_BOT_TOKEN not set")
@@ -22,41 +26,76 @@ func Post(channel, text string) error {
 	return nil
 }
 
-func ParsPayload(args map[string]interface{}) (string, string, error) {
-	if _, ok := args["plugin"]; !ok {
-		return "", "", fmt.Errorf("missing plugin information")
+func parsPayload(args map[string]interface{}) (string, string, error) {
+	fmt.Println(1)
+	if _, ok := args["template"]; !ok {
+		return "", "", fmt.Errorf("missing template information")
 	}
-	plugin, ok := args["plugin"].(map[string]interface{})
+	template, ok := args["template"].(map[string]interface{})
 	if !ok {
 		return "", "", fmt.Errorf("cast to bytes")
 	}
-	inputs, ok := plugin["hello"]
+	fmt.Println(2)
+	plugin, ok := template["plugin"].(map[string]string)
+	if !ok {
+		return "", "", fmt.Errorf("cast to bytes")
+	}
+	fmt.Println(3)
+	inputs, ok := plugin["test"]
 	if !ok {
 		return "", "", fmt.Errorf("missing inputs")
 	}
-	info, ok := inputs.(map[string]interface{})
-	if !ok {
-		return "", "", fmt.Errorf("failed to parse plugin")
-	}
+	fmt.Println(4)
+	var info map[string]interface{}
+	json.Unmarshal([]byte(inputs), &info)
 
+	fmt.Println("Success")
+	fmt.Println(info)
 	return info["channel"].(string), info["text"].(string), nil //inputs["channel"], inputs["text"], nil
 }
 
-func main() {
-	out := map[string]interface{}{
-		"workflow": map[string]interface{}{"metadata": map[string]interface{}{"name": "output-parameter-8pmnt"}},
-		"template": map[string]interface{}{"name": "slack-integration", "inputs": map[string]interface{}{"parameters": []map[string]interface{}{{"name": "message", "value": map[string]interface{}{"channel": "test", "text": "Hello Niklas"}}}}},
-		"outputs":  "",
-		"metadata": "",
-		"plugin":   map[string]interface{}{"hello": map[string]interface{}{"channel": "test", "text": "Hello Niklas"}},
-	}
-	channel, text, err := ParsPayload(out)
+func hello(w http.ResponseWriter, req *http.Request) {
+	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		panic(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
-	fmt.Println(channel, text)
-	if err := Post("C035Q8CELGM", "hello"); err != nil {
-		panic(err)
+	args := map[string]interface{}{}
+	fmt.Println("requests")
+	if err := json.Unmarshal(body, &args); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	fmt.Println("parts payload")
+	channel, text, err := parsPayload(args)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	fmt.Println("LETS POST")
+	if err := post(channel, text); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
+	resp := make(map[string]map[string]string)
+	resp["node"] = map[string]string{}
+	resp["node"]["phase"] = "Succeeded"
+	resp["node"]["message"] = "Hello template!"
+	jsonResp, err := json.Marshal(resp)
+	if err != nil {
+		log.Fatalf("Error happened in JSON marshal. Err: %s", err)
+	}
+	w.Write(jsonResp)
+}
+
+func main() {
+	// fmt.Println("START")
+	// http.HandleFunc("/api/v1/template.execute", hello)
+	// http.ListenAndServe(":4355", nil)
+	err := post("C035Q8CELGM", "hello world")
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
 }

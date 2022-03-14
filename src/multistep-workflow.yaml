@@ -22,11 +22,19 @@ spec:
           - name: message
             value: "{{steps.generate-json.outputs.parameters.hello-param}}"
 
+  
   - name: whalesay
-    container:
-      image: docker/whalesay:latest
-      command: [sh, -c]
-      args: ["echo -n \'{\"channel\": \"test\", \"text\": \"Hello Niklas\"}\' > /tmp/hello_world.txt"]
+    script:
+      image: python:alpine3.6
+      command: [python]
+      source: |
+        import json
+        import os
+
+        filename = "/tmp/hello_world.txt"
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        with open(filename, "w") as fp:
+          json.dump({"channel": "C035Q8CELGM", "text": "Hello Niklas"}, fp)
     outputs:
       parameters:
       - name: hello-param
@@ -38,7 +46,7 @@ spec:
       parameters:
       - name: message
     plugin:
-      hello: "{{inputs.parameters.message}}"
+      test: "{{inputs.parameters.message}}"
 
   - name: print-message
     inputs:

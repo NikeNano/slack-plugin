@@ -12,21 +12,20 @@ func ParsPayload(args map[string]interface{}) (string, string, error) {
 	if _, ok := args["plugin"]; !ok {
 		return "", "", fmt.Errorf("missing plugin information")
 	}
-	plugin := map[string]map[string]string{}
-	bytes, ok := args["plugin"].([]byte)
+	plugin, ok := args["plugin"].(map[string]interface{})
 	if !ok {
 		return "", "", fmt.Errorf("cast to bytes")
 	}
-	if err := json.Unmarshal(bytes, &plugin); err != nil {
-		return "", "", fmt.Errorf("unmarshal plugin")
-	}
-
-	// No we should be able to access the stuff
 	inputs, ok := plugin["hello"]
 	if !ok {
 		return "", "", fmt.Errorf("missing inputs")
 	}
-	return inputs["channel"], inputs["text"], nil
+	info, ok := inputs.(map[string]interface{})
+	if !ok {
+		return "", "", fmt.Errorf("failed to parse plugin")
+	}
+
+	return info["channel"].(string), info["text"].(string), nil //inputs["channel"], inputs["text"], nil
 }
 
 func Post(channel, text string) error {
